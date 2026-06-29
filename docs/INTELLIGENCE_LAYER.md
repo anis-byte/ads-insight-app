@@ -1,44 +1,48 @@
-# Intelligence Layer
+# Intelligence Layer — Ads Insight App
 
 ## Messy Input
-Raw CSV rows: inconsistent column naming, missing values, mixed date formats, no derived metrics.
+Raw CSV with inconsistent column names, mixed platforms, missing cells, varied date formats.
 
-## Auto-Structuring (on ingest)
+## Auto-Structure Step
+Server-side parser normalises every CSV row into this shape before storing:
 ```json
 {
-  "campaign_name": "Summer Sale — Search",
-  "platform": "Google Ads",
-  "spend": 4200.00,
-  "clicks": 8200,
-  "impressions": 310000,
-  "conversions": 112,
-  "ctr": 0.0265,
-  "cpc": 0.51,
-  "roas": 4.80
+  "campaign_name": "Retargeting — US",
+  "platform": "meta",
+  "period": "2024-W23",
+  "spend": 1420.50,
+  "impressions": 84200,
+  "clicks": 1263,
+  "conversions": 47,
+  "ctr": 1.50,
+  "cpa": 30.22,
+  "roas": 4.1
 }
 ```
-Column aliases mapped at parse time (`Cost` → `spend`, `Impr.` → `impressions`, etc.).
+Unrecognised columns are stored in a `raw_extras` jsonb field — not discarded.
 
-## Events Tracked
-- CSV uploaded (row count, column set)
-- Metric calculation completed
-- Insights generated (model, token count)
-- Report exported
-- Insight reviewed / edited
+## Events to Track
+- CSV uploaded
+- Parse succeeded / failed
+- AI insight generated (per insight)
+- Report output generated
+- User copied report
+- User edited insight (sets `review_status = 'edited'`)
 
-## Scoring Rules (rule-based first)
-| Rule | Score boost |
+## Scoring Rules (rule-based v1)
+| Signal | Score bump |
 |---|---|
-| ROAS > 4× | +0.2 |
-| CTR > 3% | +0.15 |
-| CPC < channel average | +0.15 |
-| Conversions < 10 | −0.2 (flag as low volume) |
+| CPA decreased >10% WoW | +2 |
+| ROAS increased >15% WoW | +2 |
+| CTR dropped >20% WoW | −2 |
+| Spend with zero conversions | −3 |
+Insights sorted by `abs(score) DESC` → top 3 surfaced first.
 
-OpenAI prompt returns a `confidence` float (0–1); stored verbatim.
-
-## What Gets Ranked
-Insights sorted by `confidence` descending before display. Best/worst performers ranked by ROAS.
+## AI Prompt Strategy
+- Input: structured JSON of top/bottom campaigns + WoW deltas
+- Output: 3–5 insight bullets + 1 narrative paragraph
+- Temperature: 0.3 (factual, not creative)
 
 ## v1 vs Later
-- **v1:** Rule-based metric scoring + OpenAI summary generation.
-- **Later:** Fine-tuned prompts per channel; anomaly detection via statistical z-score; period-over-period delta commentary.
+**v1:** Rule-based scoring + GPT-4o narrative on demand
+**Later:** Fine-tuned tone matching, automated weekly digest, anomaly detection with statistical significance

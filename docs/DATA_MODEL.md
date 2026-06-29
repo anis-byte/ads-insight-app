@@ -1,54 +1,73 @@
-# Data Model
-
-## campaigns
-| Field | Type | Notes |
-|---|---|---|
-| id | uuid PK | auto |
-| user_id | uuid nullable | owner — no FK yet; set at lock-down |
-| campaign_name | text | e.g. "Summer Sale — Search" |
-| platform | text | Google Ads / Meta Ads / LinkedIn Ads |
-| objective | text | Conversions / Reach / Lead Generation |
-| spend | numeric | raw from CSV |
-| impressions | bigint | |
-| clicks | bigint | |
-| leads | integer | |
-| conversions | integer | |
-| ctr | numeric | calculated on ingest: clicks/impressions |
-| cpc | numeric | spend/clicks |
-| cpl | numeric | spend/leads |
-| roas | numeric | revenue/spend (if revenue column present) |
-| date_start | date | |
-| date_end | date | |
-| created_at | timestamptz | |
+# Data Model — Ads Insight App
 
 ## reports
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
-| user_id | uuid nullable | |
-| title | text | e.g. "June 2024 Campaign Report" |
-| period_label | text | human-readable date range |
-| total_spend | numeric | |
-| total_impressions | bigint | |
-| total_clicks | bigint | |
-| total_conversions | integer | |
-| avg_ctr | numeric | |
-| avg_roas | numeric | |
+| user_id | uuid nullable | owner, set at lock-down |
+| name | text | e.g. "Meta Ads — Week 23" |
+| platform | text | 'meta' \| 'google' \| 'other' |
+| date_range_start | date | |
+| date_range_end | date | |
+| status | text | 'processing' \| 'ready' \| 'error' |
+| csv_file_path | text | Supabase Storage path |
 | created_at | timestamptz | |
 
-## ai_insights
+## campaigns
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
 | user_id | uuid nullable | |
-| report_id | uuid FK → reports | cascade delete |
-| insight_type | text | best_performer / worst_performer / recommendation / anomaly |
-| value | text | **AI-generated** — the insight text |
-| source | text | e.g. `openai/gpt-4o` |
-| confidence | numeric | 0.0–1.0 returned by prompt |
-| review_status | text | unreviewed / approved / edited |
+| report_id | uuid FK → reports | |
+| campaign_name | text | |
+| platform | text | |
+| status | text | |
+| created_at | timestamptz | |
+
+## metric_snapshots
+| Field | Type | Notes |
+|---|---|---|
+| id | uuid PK | |
+| user_id | uuid nullable | |
+| campaign_id | uuid FK → campaigns | |
+| report_id | uuid FK → reports | |
+| period_label | text | e.g. 'This Week', 'Last Week' |
+| spend | numeric | |
+| impressions | integer | |
+| clicks | integer | |
+| conversions | integer | |
+| ctr | numeric | |
+| cpl | numeric | |
+| cpa | numeric | |
+| roas | numeric | |
+| created_at | timestamptz | |
+
+## insights
+| Field | Type | Notes |
+|---|---|---|
+| id | uuid PK | |
+| user_id | uuid nullable | |
+| report_id | uuid FK → reports | |
+| insight_type | text | 'top_winner' \| 'top_loser' \| 'anomaly' \| 'summary' |
+| title | text | Short headline |
+| body | text | **AI-generated** |
+| body_source | text | 'openai-gpt4o' |
+| body_confidence | numeric | 0–1 |
+| body_review_status | text | 'unreviewed' \| 'approved' \| 'edited' |
+| metric_context | jsonb | raw numbers that drove this insight |
+| created_at | timestamptz | |
+
+## report_outputs
+| Field | Type | Notes |
+|---|---|---|
+| id | uuid PK | |
+| user_id | uuid nullable | |
+| report_id | uuid FK → reports | |
+| narrative | text | **AI-generated** full report copy |
+| narrative_source | text | 'openai-gpt4o' |
+| narrative_confidence | numeric | |
+| narrative_review_status | text | 'unreviewed' \| 'approved' |
 | created_at | timestamptz | |
 
 ## RLS Notes
-- v1: permissive read + write for all tables (demo-first).
-- Lock-down sprint: replace with `auth.uid() = user_id` owner policies.
+- All tables: RLS enabled, v1 permissive (read + write open) — lock-down sprint replaces with `auth.uid() = user_id`.
