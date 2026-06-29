@@ -1,16 +1,30 @@
-Problem: An AI-powered app that turns raw marketing or business data into clear, human explanations and insights.
+# Product Requirements Document
 
-It removes the repetitive work of:
-manually analysing campaign performance
-writing weekly reports
-explaining “what happened + why it happened”
-turning spreadsheets into slides or narratives for stakeholders
+## Problem
+Marketing teams spend hours exporting data, comparing periods, and writing summaries. Stakeholders only want three answers: what happened, why, and what to do next. Raw CSV data gives them none of that.
 
-In short: it helps you go from data → insights → story in minutes instead of hours.
-For: Media buyers / performance marketers Marketing analysts Founders / small business owners Clients who need simple explanations (non-technical stakeholders)
-Core things to track: Campaigns (Meta / Google / etc.) Ad sets / ads performance Key metrics (CTR, CPL, CPA, ROAS, spend, conversions) Time-based performance changes (day/week comparisons) Audience / targeting segments Experiment or A/B test results Notes or context (budget changes, creative changes)
-The one workflow (must work v1): A user uploads a CSV (or connects a simple sheet), and the app automatically:  cleans and reads the data generates a performance summary highlights key insights (what improved / dropped / why) outputs a simple “ready-to-send” report
-Success in a week: A deployed working app (live link) A demo dataset that shows real insights being generated A short case study explaining: problem → solution → how AI helps A simple UI that clearly shows “upload → insight → output”  Basically: something you can confidently show in interviews and say “I built this end-to-end”.
-Not v1: Direct Meta / Google Ads API integration Real-time syncing of data Multi-user/team collaboration Advanced predictive ML models (budget optimization, forecasting) Slack / email automation alerts Complex dashboards with 20+ charts
+## Target User
+- **Primary:** Performance marketers, media buyers, marketing analysts
+- **Secondary:** Founders and consultants sharing results with clients
 
-Build focus: Optimize for a polished, demoable portfolio piece a recruiter can try in 30 seconds — first impression and clarity matter.
+## Core Objects
+| Object | Purpose |
+|---|---|
+| `Campaign` | One row of campaign data from a CSV upload |
+| `Report` | AI-generated summary tied to an upload batch |
+| `ReportInsight` | Individual AI finding (best campaign, reason, recommendation) |
+| `AuditLog` | Record of every meaningful system or user action |
+
+## MVP Must-Haves (v1)
+- [ ] CSV upload with column validation and row preview
+- [ ] Calculated metrics per campaign: CPC, CTR, CVR, CPA
+- [ ] Campaign metrics dashboard with charts
+- [ ] AI insight generation: best campaign, worst campaign, reasons, recommendations
+- [ ] Report page with copy and export
+- [ ] App loads with seeded demo data — no login required
+
+## Non-Goals (v1)
+Meta/Google API integrations · real-time sync · team workspaces · email reports · predictive forecasting · AI chat · authentication (deferred to Sprint 4)
+
+## Success Criteria
+A visitor opens the app, uploads a CSV of campaign data, sees a metrics dashboard, clicks "Generate Insights", reads AI-written findings, and exports a report — all in under 30 seconds, without creating an account.
