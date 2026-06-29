@@ -2,23 +2,17 @@
 
 ## Secret Handling
 - `OPENAI_API_KEY` and `SUPABASE_SERVICE_ROLE_KEY` live in Vercel environment variables only.
-- Never imported in `/app` (client) code — only in `/app/api` route handlers.
-- `SUPABASE_ANON_KEY` is the only key exposed to the browser (read-only public client).
+- Client-side code uses only `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- No secrets are imported into any file under `/app` (frontend) or returned in API responses.
 
-## Permission Model (v1 → locked)
-| Phase | Rule |
+## Permission Model (current → lock-down)
+| Phase | Model |
 |---|---|
-| v1 demo | Permissive RLS — all rows readable/writable by anyone (demo mode) |
-| Lock-down sprint | RLS owner policies: `auth.uid() = user_id` on all tables |
-| Agent actions | Agent calls Supabase with the authenticated user's JWT — inherits their row permissions |
+| v1 (demo) | Permissive RLS — all rows readable/writable; no login required |
+| Lock-down sprint | Supabase Auth; RLS policies scoped to `auth.uid() = user_id`; service role used only in server-side route handlers |
 
 ## Approved Tools Rule
-Only `summarise_batch`, `generate_insights`, and `export_report` may call external APIs. No raw `eval`, `run_any`, or unrestricted `fetch` in agent code.
+API route handlers call only named, scoped tools (`parse_csv`, `calculate_metrics`, `generate_insights`, `export_report`). No `eval`, no `exec`, no wildcard shell commands. Agent actions are implemented as discrete functions with typed inputs.
 
 ## Audit Principle
-Every AI call writes a row to `audit_logs` before returning results. Includes: action name, object touched, model used, prompt token count, and timestamp. Logs are append-only — no delete policy.
-
-## Upload Safety
-- CSV parsing runs server-side only.
-- File size capped at 5 MB in the API route.
-- Only expected column names are mapped; all others are dropped.
+Every write operation (upload, insight generation, export, delete) logs actor + object + timestamp to Supabase. Logs are append-only; no route exposes a bulk-delete endpoint for logs.

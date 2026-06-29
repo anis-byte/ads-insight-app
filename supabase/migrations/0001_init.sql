@@ -5,15 +5,16 @@ create table if not exists campaigns (
   platform text not null,
   objective text,
   spend numeric not null default 0,
-  impressions integer not null default 0,
-  clicks integer not null default 0,
+  impressions bigint not null default 0,
+  clicks bigint not null default 0,
   leads integer not null default 0,
   conversions integer not null default 0,
-  cpc numeric,
   ctr numeric,
-  cvr numeric,
-  cpa numeric,
-  upload_batch_id uuid,
+  cpc numeric,
+  cpl numeric,
+  roas numeric,
+  date_start date,
+  date_end date,
   created_at timestamptz not null default now()
 );
 
@@ -26,11 +27,14 @@ create policy "campaigns_v1_write" on campaigns for all using (true) with check 
 create table if not exists reports (
   id uuid primary key default gen_random_uuid(),
   user_id uuid,
-  upload_batch_id uuid,
-  summary text,
-  summary_source text,
-  summary_confidence numeric,
-  summary_review_status text default 'unreviewed',
+  title text not null,
+  period_label text,
+  total_spend numeric,
+  total_impressions bigint,
+  total_clicks bigint,
+  total_conversions integer,
+  avg_ctr numeric,
+  avg_roas numeric,
   created_at timestamptz not null default now()
 );
 
@@ -40,51 +44,58 @@ create policy "reports_v1_read" on reports for select using (true);
 drop policy if exists "reports_v1_write" on reports;
 create policy "reports_v1_write" on reports for all using (true) with check (true);
 
-create table if not exists report_insights (
+create table if not exists ai_insights (
   id uuid primary key default gen_random_uuid(),
   user_id uuid,
   report_id uuid references reports(id) on delete cascade,
   insight_type text not null,
   value text not null,
-  source text not null default 'openai-gpt-4o',
-  confidence numeric,
+  source text not null default 'openai/gpt-4o',
+  confidence numeric not null default 0.0,
   review_status text not null default 'unreviewed',
   created_at timestamptz not null default now()
 );
 
-alter table report_insights enable row level security;
-drop policy if exists "report_insights_v1_read" on report_insights;
-create policy "report_insights_v1_read" on report_insights for select using (true);
-drop policy if exists "report_insights_v1_write" on report_insights;
-create policy "report_insights_v1_write" on report_insights for all using (true) with check (true);
+alter table ai_insights enable row level security;
+drop policy if exists "ai_insights_v1_read" on ai_insights;
+create policy "ai_insights_v1_read" on ai_insights for select using (true);
+drop policy if exists "ai_insights_v1_write" on ai_insights;
+create policy "ai_insights_v1_write" on ai_insights for all using (true) with check (true);
 
-create table if not exists audit_logs (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid,
-  action text not null,
-  object_type text not null,
-  object_id uuid,
-  payload jsonb,
-  created_at timestamptz not null default now()
-);
+insert into campaigns (campaign_name, platform, objective, spend, impressions, clicks, leads, conversions, ctr, cpc, cpl, roas, date_start, date_end) values
+  ('Summer Sale — Search', 'Google Ads', 'Conversions', 4200.00, 310000, 8200, 340, 112, 2.65, 0.51, 12.35, 4.80, '2024-06-01', '2024-06-30'),
+  ('Brand Awareness — Meta', 'Meta Ads', 'Reach', 1800.00, 820000, 3100, 90, 28, 0.38, 0.58, 20.00, 2.10, '2024-06-01', '2024-06-30'),
+  ('Retargeting — Meta', 'Meta Ads', 'Conversions', 950.00, 95000, 4200, 210, 88, 4.42, 0.23, 4.52, 7.30, '2024-06-01', '2024-06-30'),
+  ('Lead Gen — LinkedIn', 'LinkedIn Ads', 'Lead Generation', 3100.00, 120000, 1800, 420, 38, 1.50, 1.72, 7.38, 1.80, '2024-06-01', '2024-06-30'),
+  ('YouTube Pre-Roll — Branding', 'Google Ads', 'Brand Awareness', 2200.00, 540000, 2900, 60, 19, 0.54, 0.76, 36.67, 1.20, '2024-06-01', '2024-06-30');
 
-alter table audit_logs enable row level security;
-drop policy if exists "audit_logs_v1_read" on audit_logs;
-create policy "audit_logs_v1_read" on audit_logs for select using (true);
-drop policy if exists "audit_logs_v1_write" on audit_logs;
-create policy "audit_logs_v1_write" on audit_logs for all using (true) with check (true);
+insert into reports (title, period_label, total_spend, total_impressions, total_clicks, total_conversions, avg_ctr, avg_roas) values
+  ('June 2024 Campaign Report', 'June 1–30 2024', 12250.00, 1885000, 20200, 285, 1.72, 3.44);
 
-insert into campaigns (id, campaign_name, platform, objective, spend, impressions, clicks, leads, conversions, cpc, ctr, cvr, cpa, upload_batch_id) values
-  ('a1b2c3d4-0001-0001-0001-000000000001', 'Summer Sale — Search', 'Google Ads', 'Conversions', 4200, 180000, 3600, 210, 95, 1.17, 2.00, 2.64, 44.21, 'demo-batch-0001'),
-  ('a1b2c3d4-0002-0002-0002-000000000002', 'Brand Awareness — Meta', 'Meta Ads', 'Reach', 1800, 520000, 4160, 48, 12, 0.43, 0.80, 0.29, 150.00, 'demo-batch-0001'),
-  ('a1b2c3d4-0003-0003-0003-000000000003', 'Retargeting — Meta', 'Meta Ads', 'Conversions', 900, 62000, 1860, 140, 78, 0.48, 3.00, 4.19, 11.54, 'demo-batch-0001'),
-  ('a1b2c3d4-0004-0004-0004-000000000004', 'Lead Gen — LinkedIn', 'LinkedIn Ads', 'Lead Generation', 3100, 95000, 760, 88, 31, 4.08, 0.80, 4.08, 100.00, 'demo-batch-0001');
-
-insert into reports (id, upload_batch_id, summary, summary_source, summary_confidence, summary_review_status) values
-  ('b1b2c3d4-0001-0001-0001-000000000001', 'demo-batch-0001', 'The Retargeting campaign on Meta delivered the strongest efficiency with a CPA of $11.54 and a 4.19% CVR, well above all other campaigns. The Brand Awareness campaign on Meta generated high reach but poor conversion efficiency at a $150 CPA, suggesting audience or landing page misalignment. Reallocating budget from Brand Awareness to Retargeting and Search is recommended.', 'openai-gpt-4o', 0.91, 'unreviewed');
-
-insert into report_insights (report_id, insight_type, value, source, confidence, review_status) values
-  ('b1b2c3d4-0001-0001-0001-000000000001', 'best_campaign', 'Retargeting — Meta: lowest CPA ($11.54), highest CVR (4.19%). Strong signal to increase budget here.', 'openai-gpt-4o', 0.93, 'unreviewed'),
-  ('b1b2c3d4-0001-0001-0001-000000000001', 'worst_campaign', 'Brand Awareness — Meta: CPA of $150 with only 12 conversions from 520k impressions. Poor ROI.', 'openai-gpt-4o', 0.89, 'unreviewed'),
-  ('b1b2c3d4-0001-0001-0001-000000000001', 'possible_reason', 'Brand Awareness audience is too broad and likely not purchase-intent. Retargeting warm audiences converts 14x cheaper.', 'openai-gpt-4o', 0.85, 'unreviewed'),
-  ('b1b2c3d4-0001-0001-0001-000000000001', 'recommendation', 'Shift 30% of Meta Brand Awareness budget to Meta Retargeting and monitor CPA weekly. Pause LinkedIn if lead quality is low.', 'openai-gpt-4o', 0.88, 'unreviewed');
+insert into ai_insights (report_id, insight_type, value, source, confidence, review_status)
+select
+  r.id,
+  'best_performer',
+  'Retargeting — Meta delivered the highest ROAS (7.3×) at the lowest CPC ($0.23), making it the most efficient campaign in June. Recommend increasing its budget by 20–30%.',
+  'openai/gpt-4o',
+  0.91,
+  'unreviewed'
+from reports r where r.title = 'June 2024 Campaign Report'
+union all
+select
+  r.id,
+  'worst_performer',
+  'YouTube Pre-Roll had the lowest ROAS (1.2×) and highest CPL ($36.67). Consider pausing or shifting budget to lower-funnel channels until brand lift data confirms value.',
+  'openai/gpt-4o',
+  0.85,
+  'unreviewed'
+from reports r where r.title = 'June 2024 Campaign Report'
+union all
+select
+  r.id,
+  'recommendation',
+  'Reallocate 15% of LinkedIn budget to the Meta Retargeting campaign. LinkedIn CPL ($7.38) is competitive for B2B but conversion volume (38) is low relative to spend — test a lead-magnet creative refresh first.',
+  'openai/gpt-4o',
+  0.78,
+  'unreviewed'
+from reports r where r.title = 'June 2024 Campaign Report';

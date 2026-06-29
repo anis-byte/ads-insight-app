@@ -1,82 +1,85 @@
-# Tasks & Sprints
+# Task Sprints
 
-## Sprint 1 — Database, Upload Engine, Demo Data
-**Goal:** Core data pipeline works end-to-end; app is demoable without login.
+## Sprint 1 — DB, Upload Engine, Metrics Dashboard
+**Goal:** Core data pipeline works end-to-end; dashboard renders with seed data for anonymous visitors.
 
-- [ ] Apply Supabase migration SQL (campaigns, reports, report_insights, audit_logs)
-- [ ] Seed 4 realistic demo campaign rows + 1 demo report + 4 demo insights
-- [ ] `POST /api/upload` — parse CSV, validate columns (campaign_name, platform, spend, impressions, clicks, conversions required), calculate CPC/CTR/CVR/CPA, insert to `campaigns`
-- [ ] Upload page UI — drag-and-drop CSV, column error messages, row preview table
-- [ ] Homepage renders demo campaign cards without login wall
-- [ ] Audit log write on upload
+- [ ] Initialise Next.js 14 (App Router) + Tailwind CSS
+- [ ] Install Supabase JS client; configure env vars
+- [ ] Run migration SQL (campaigns, reports, ai_insights + seed rows)
+- [ ] Build `/upload` page: CSV file picker, column-header validation, 10-row preview table
+- [ ] `POST /api/upload`: parse CSV → calculate CTR/CPC/CPL/ROAS → insert into `campaigns` → return report_id
+- [ ] `GET /api/dashboard`: aggregate all campaigns → KPI totals + per-campaign rows
+- [ ] Build `/dashboard` page: KPI cards (Total Spend, Impressions, Clicks, Conversions, avg ROAS) + Recharts bar chart
+- [ ] Empty state: prompt to upload when no campaigns exist
+- [ ] Loading skeleton for dashboard fetch
 
-**Definition of Done:** A CSV upload persists rows to DB; preview table shows parsed data; homepage shows seeded campaigns to an anonymous visitor.
-
----
-
-## Sprint 2 — Dashboard + AI Insights ✅ v1 functional milestone
-**Goal:** Full end-to-end flow — upload → metrics → AI insights — works for a real user.
-
-- [ ] `GET /api/dashboard` returns campaigns + aggregated metrics for a batch
-- [ ] Dashboard page: spend, impressions, clicks, conversions, CPC, CTR, CPA cards
-- [ ] Recharts bar/line charts per campaign (spend vs conversions, CPC comparison)
-- [ ] Rule-based campaign ranking (best/worst by CPA) runs without AI
-- [ ] `POST /api/generate-insights` — call OpenAI with structured batch data, store each insight with `source`, `confidence`, `review_status`
-- [ ] Insight panel: best campaign, worst campaign, possible reason, recommendation
-- [ ] Loading spinner, empty state, and error toast for every async action
-- [ ] Audit log write on insight generation
-
-**Definition of Done:** Upload a CSV → see metric dashboard → click Generate Insights → AI insight panel populates from DB → all states handled.
+**Definition of Done:** Upload a 5-row CSV → rows in Supabase → dashboard shows correct KPIs. Seed data visible on first load without login.
 
 ---
 
-## Sprint 3 — Report Export & UI Polish
-**Goal:** Shareable, exportable report; responsive and production-quality UI.
+## Sprint 2 — AI Insight Generation *(v1 functional milestone)*
+**Goal:** The one core engine — generate insights — works end-to-end against the database.
 
-- [ ] `GET /api/report?reportId=` returns full report + insights
-- [ ] Report page renders AI summary + insight bullets in clean layout
-- [ ] Copy-to-clipboard button for each insight and full summary
-- [ ] PDF or plain-text export (browser print / `jsPDF`)
-- [ ] Responsive layout — works on mobile
-- [ ] Empty-state illustrations for no-upload and no-report screens
-- [ ] Error boundary wrapping main routes
+- [ ] `POST /api/generate-insights`: build prompt from campaign rows, call OpenAI, parse structured JSON response
+- [ ] Insert each insight into `ai_insights` (value, source, confidence, review_status)
+- [ ] Insert/update `reports` row with aggregated totals
+- [ ] **Generate Insights** button on dashboard — active, persists result, shows loading state
+- [ ] Build `/report/[id]` page: summary card, findings list (best/worst), recommendations list
+- [ ] Confidence badge per insight (e.g. 91% confident)
+- [ ] Error toast if OpenAI call fails; partial results still saved
 
-**Definition of Done:** Report page renders correctly; copy and export buttons work; no broken layouts on mobile.
-
----
-
-## Sprint 4 — Lock It Down (Auth + Per-User RLS)
-**Goal:** User data is private; app is safe for real use.
-
-- [ ] Supabase Auth: sign-up, login, logout flows
-- [ ] Set `user_id` on campaigns and reports at write time from `auth.uid()`
-- [ ] Replace v1 permissive RLS with `auth.uid() = user_id` owner policies on all tables
-- [ ] Redirect unauthenticated users from `/dashboard` to landing page
-- [ ] Landing page retains seeded demo data (visible to all) with a "Try with demo data" CTA
-- [ ] Per-user report history list
-
-**Definition of Done:** Two test accounts cannot see each other's campaigns or reports; anonymous users see only demo data.
+**Definition of Done:** Click Generate → AI output stored in DB → `/report/[id]` shows real insights with confidence scores. ✅ *v1 functional milestone*
 
 ---
 
-## Sprint 5 — Insight Review, History & Deploy
-**Goal:** Users can review AI output; app is live and documented.
+## Sprint 3 — Export, Polish, Error Handling
+**Goal:** Full flow is smooth, mobile-friendly, and handles edge cases.
 
-- [ ] Insight review UI — Accept / Edit / Reject buttons per insight, updates `review_status` in DB
-- [ ] Report history list sorted by date
-- [ ] Deploy to Vercel with `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` in env
-- [ ] Smoke test on production URL (upload → insights → export)
-- [ ] `docs/` complete and committed
+- [ ] `GET /api/report/[id]`: return report + insights as JSON
+- [ ] Export button: download formatted markdown/text report file
+- [ ] Copy-to-clipboard button per insight
+- [ ] Responsive layout (mobile, tablet, desktop)
+- [ ] Error boundaries on all async pages
+- [ ] Validate CSV max file size (5 MB) and max rows (500)
+- [ ] Handle duplicate column names and missing optional columns gracefully
 
-**Definition of Done:** Production URL passes full manual test plan; insight review persists to DB.
+**Definition of Done:** End-to-end flow works on a 375 px mobile screen; export downloads a real readable file; bad CSV shows a clear error message.
+
+---
+
+## Sprint 4 — Lock It Down (Auth + RLS)
+**Goal:** Per-user data isolation; no user sees another's campaigns.
+
+- [ ] Enable Supabase Auth (email/password)
+- [ ] Login and signup pages
+- [ ] Set `user_id = auth.uid()` on all writes
+- [ ] Replace v1 permissive RLS policies with owner-scoped policies
+- [ ] `/dashboard` still shows seed demo data to anonymous visitors; `/upload` and `/report` require login
+- [ ] Logout button in nav
+
+**Definition of Done:** Two test accounts cannot access each other's data; seed rows remain publicly visible.
+
+---
+
+## Sprint 5 — History, Comparison, Deploy
+**Goal:** Production-ready, publicly accessible, demo-complete.
+
+- [ ] Report history list page: all reports for logged-in user, sorted by date
+- [ ] Period-over-period delta column in dashboard table (if ≥ 2 reports exist)
+- [ ] Human review UI: Approve / Edit buttons update `review_status`
+- [ ] Deploy to Vercel; confirm all env vars set (no secrets in repo)
+- [ ] Create and publish demo CSV dataset in `/public/demo-data.csv`
+- [ ] Verify full flow on production URL in < 30 seconds
+
+**Definition of Done:** Public URL accessible; demo CSV produces a full AI report; no secrets in source code; Lighthouse performance score ≥ 80.
 
 ---
 
 ## Gantt (Sprint → Feature)
 ```
-Sprint 1 | DB schema · CSV upload · demo seed · homepage
-Sprint 2 | Dashboard · charts · AI insights · API endpoints   ← v1 functional
-Sprint 3 | Report page · export · UI polish · responsive
-Sprint 4 | Auth · RLS · per-user isolation
-Sprint 5 | Insight review · history · deploy · docs
+Sprint 1  |  DB schema · CSV upload · metric calc · dashboard · seed data
+Sprint 2  |  AI insight generation · report page · confidence scores       ← v1 functional
+Sprint 3  |  Export · copy · responsive · error handling · CSV validation
+Sprint 4  |  Auth · login/signup · owner RLS · data isolation
+Sprint 5  |  Report history · delta view · review UI · production deploy
 ```

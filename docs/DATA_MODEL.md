@@ -4,20 +4,21 @@
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | auto |
-| user_id | uuid nullable | owner (null = demo row) |
-| campaign_name | text | |
-| platform | text | e.g. Google Ads, Meta Ads |
-| objective | text | |
+| user_id | uuid nullable | owner — no FK yet; set at lock-down |
+| campaign_name | text | e.g. "Summer Sale — Search" |
+| platform | text | Google Ads / Meta Ads / LinkedIn Ads |
+| objective | text | Conversions / Reach / Lead Generation |
 | spend | numeric | raw from CSV |
-| impressions | integer | |
-| clicks | integer | |
+| impressions | bigint | |
+| clicks | bigint | |
 | leads | integer | |
 | conversions | integer | |
-| cpc | numeric | calculated: spend/clicks |
-| ctr | numeric | calculated: clicks/impressions |
-| cvr | numeric | calculated: conversions/clicks |
-| cpa | numeric | calculated: spend/conversions |
-| upload_batch_id | uuid | groups one CSV upload |
+| ctr | numeric | calculated on ingest: clicks/impressions |
+| cpc | numeric | spend/clicks |
+| cpl | numeric | spend/leads |
+| roas | numeric | revenue/spend (if revenue column present) |
+| date_start | date | |
+| date_end | date | |
 | created_at | timestamptz | |
 
 ## reports
@@ -25,36 +26,29 @@
 |---|---|---|
 | id | uuid PK | |
 | user_id | uuid nullable | |
-| upload_batch_id | uuid | links to campaigns batch |
-| summary | text | **AI field** |
-| summary_source | text | e.g. `openai-gpt-4o` |
-| summary_confidence | numeric | 0–1 |
-| summary_review_status | text | `unreviewed` / `accepted` / `edited` / `rejected` |
+| title | text | e.g. "June 2024 Campaign Report" |
+| period_label | text | human-readable date range |
+| total_spend | numeric | |
+| total_impressions | bigint | |
+| total_clicks | bigint | |
+| total_conversions | integer | |
+| avg_ctr | numeric | |
+| avg_roas | numeric | |
 | created_at | timestamptz | |
 
-## report_insights
+## ai_insights
 | Field | Type | Notes |
 |---|---|---|
 | id | uuid PK | |
 | user_id | uuid nullable | |
-| report_id | uuid FK → reports | |
-| insight_type | text | `best_campaign` / `worst_campaign` / `possible_reason` / `recommendation` |
-| value | text | **AI field** — the insight text |
-| source | text | `openai-gpt-4o` |
-| confidence | numeric | 0–1 |
-| review_status | text | `unreviewed` / `accepted` / `edited` / `rejected` |
+| report_id | uuid FK → reports | cascade delete |
+| insight_type | text | best_performer / worst_performer / recommendation / anomaly |
+| value | text | **AI-generated** — the insight text |
+| source | text | e.g. `openai/gpt-4o` |
+| confidence | numeric | 0.0–1.0 returned by prompt |
+| review_status | text | unreviewed / approved / edited |
 | created_at | timestamptz | |
 
-## audit_logs
-| Field | Type | Notes |
-|---|---|---|
-| id | uuid PK | |
-| user_id | uuid nullable | |
-| action | text | e.g. `csv_uploaded`, `insights_generated` |
-| object_type | text | `campaign` / `report` / `report_insight` |
-| object_id | uuid | |
-| payload | jsonb | relevant context snapshot |
-| created_at | timestamptz | |
-
-## RLS
-All tables use permissive v1 policies (select/all = true). Sprint 4 replaces with `auth.uid() = user_id`.
+## RLS Notes
+- v1: permissive read + write for all tables (demo-first).
+- Lock-down sprint: replace with `auth.uid() = user_id` owner policies.

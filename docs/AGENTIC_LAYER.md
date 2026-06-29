@@ -1,36 +1,38 @@
 # Agentic Layer
 
-## Risk Classification
+## Risk Levels & Actions
 
 ### Low Risk — Auto-execute
-- Summarise campaign batch → AI writes `reports.summary`
-- Tag each campaign with performance tier (top / mid / poor) → stored in `campaigns`
-- Draft insight bullets → stored as `report_insights` with `review_status = unreviewed`
+- Compute derived metrics (CTR, CPC, CPL, ROAS) on CSV ingest
+- Tag insight type (best_performer / worst_performer / recommendation)
+- Score campaigns by ROAS / CTR rules
+- Draft AI insight text and store with `review_status = unreviewed`
 
-### Medium Risk — Light Approval
-- Overwrite a previously accepted insight with a new AI version (user must confirm)
-- Re-generate report for the same batch (replaces existing rows)
+### Medium Risk — User confirms before executing
+- Overwrite existing campaign rows with a re-upload of the same date range
+- Mark an insight as `approved` (user clicks Approve)
+- Edit AI-generated insight text (user edits → `review_status = edited`)
 
-### High Risk — Always Approval
-- Sending a report to an external email or Slack (v2 feature, not v1)
+### High Risk — Explicit approval required
+- Export and share report externally (user must click Export)
+- *(Future)* Send report via email to a client address
 
-### Critical — Human Only
-- Deleting campaigns or reports from the database
-- Bulk data wipe
+### Critical — Human only
+- Delete a campaign batch or report
+- *(Future)* Charge or bill actions
 
 ## Named Tools (v1)
-| Tool | Input | Output |
+| Tool | Trigger | Risk |
 |---|---|---|
-| `summarise_batch` | `upload_batch_id` | `reports` row |
-| `generate_insights` | `report_id` + campaign rows | `report_insights` rows |
-| `export_report` | `report_id` | Markdown / PDF string |
+| `parse_csv` | File selected | Low |
+| `calculate_metrics` | After parse | Low |
+| `generate_insights` | Button click | Low (drafts only) |
+| `export_report` | Button click | High |
+| `delete_report` | Explicit confirm dialog | Critical |
 
 ## Audit Log Fields
-`action`, `object_type`, `object_id`, `user_id`, `payload` (prompt hash, model, token count), `created_at`
+Every meaningful action records: `action`, `object_type`, `object_id`, `actor` (user_id or 'anonymous'), `before_state`, `after_state`, `timestamp`.
 
 ## v1 vs Later
-| v1 | Later |
-|---|---|
-| Manual trigger (button) | Scheduled auto-generation post-upload |
-| Text export | Email delivery |
-| Single model (gpt-4o) | Model selector / fallback chain |
+- **v1:** All tools are single-user, no approval queue UI needed.
+- **Later:** Approval queue for multi-user teams; email tool with send confirmation.

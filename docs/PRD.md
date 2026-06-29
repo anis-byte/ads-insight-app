@@ -1,30 +1,36 @@
 # Product Requirements Document
 
 ## Problem
-Marketing teams spend hours exporting data, comparing periods, and writing summaries. Stakeholders only want three answers: what happened, why, and what to do next. Raw CSV data gives them none of that.
+Marketing teams waste hours exporting CSVs, calculating metrics manually, and writing stakeholder summaries. Stakeholders only want three answers: what happened, why, and what to do next.
 
-## Target User
+## Target Users
 - **Primary:** Performance marketers, media buyers, marketing analysts
-- **Secondary:** Founders and consultants sharing results with clients
+- **Secondary:** Founders, consultants sharing results with clients
 
 ## Core Objects
 | Object | Purpose |
 |---|---|
-| `Campaign` | One row of campaign data from a CSV upload |
-| `Report` | AI-generated summary tied to an upload batch |
-| `ReportInsight` | Individual AI finding (best campaign, reason, recommendation) |
-| `AuditLog` | Record of every meaningful system or user action |
+| `Campaign` | One row of channel/metric data from a CSV upload |
+| `Report` | Aggregated summary across a batch of campaigns |
+| `AI Insight` | Single AI-generated finding tied to a report |
 
-## MVP Must-Haves (v1)
-- [ ] CSV upload with column validation and row preview
-- [ ] Calculated metrics per campaign: CPC, CTR, CVR, CPA
-- [ ] Campaign metrics dashboard with charts
-- [ ] AI insight generation: best campaign, worst campaign, reasons, recommendations
-- [ ] Report page with copy and export
-- [ ] App loads with seeded demo data — no login required
+## MVP Checklist (v1)
+- [ ] CSV upload with column validation and data preview
+- [ ] Derived metric calculation (CTR, CPC, CPL, ROAS) on ingest
+- [ ] Dashboard: KPI cards + bar/line charts across campaigns
+- [ ] AI insight generation: best performer, worst performer, recommendations
+- [ ] Store every AI field with `value`, `source`, `confidence`, `review_status`
+- [ ] Report page: summary + findings + recommendations
+- [ ] Export report as text/markdown download
+- [ ] Copy individual insight to clipboard
+- [ ] Seed demo campaigns so app is live without login
 
 ## Non-Goals (v1)
-Meta/Google API integrations · real-time sync · team workspaces · email reports · predictive forecasting · AI chat · authentication (deferred to Sprint 4)
+- Meta / Google Ads API integrations
+- User accounts and per-user data isolation
+- Team workspaces, sharing, or email delivery
+- Predictive forecasting or AI chat
+- Period-over-period comparison view
 
-## Success Criteria
-A visitor opens the app, uploads a CSV of campaign data, sees a metrics dashboard, clicks "Generate Insights", reads AI-written findings, and exports a report — all in under 30 seconds, without creating an account.
+## Success Scenario
+A visitor opens the app, uploads a 5-campaign CSV, clicks **Generate Insights**, and within 30 seconds sees a dashboard with KPI cards, a chart, three AI insights, and downloads a formatted report — without creating an account.

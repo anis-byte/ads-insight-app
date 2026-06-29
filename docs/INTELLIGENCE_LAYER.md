@@ -1,42 +1,44 @@
 # Intelligence Layer
 
 ## Messy Input
-A raw CSV from a marketer — inconsistent column names, mixed platforms, blank cells, no calculated metrics.
+Raw CSV rows: inconsistent column naming, missing values, mixed date formats, no derived metrics.
 
-## Auto-Structure
-After upload, the API normalises each row to:
+## Auto-Structuring (on ingest)
 ```json
 {
   "campaign_name": "Summer Sale — Search",
   "platform": "Google Ads",
-  "spend": 4200,
-  "impressions": 180000,
-  "clicks": 3600,
-  "conversions": 95,
-  "cpc": 1.17,
-  "ctr": 2.00,
-  "cvr": 2.64,
-  "cpa": 44.21
+  "spend": 4200.00,
+  "clicks": 8200,
+  "impressions": 310000,
+  "conversions": 112,
+  "ctr": 0.0265,
+  "cpc": 0.51,
+  "roas": 4.80
 }
 ```
+Column aliases mapped at parse time (`Cost` → `spend`, `Impr.` → `impressions`, etc.).
 
-## Events That Trigger AI
-| Event | Action |
-|---|---|
-| User clicks "Generate Insights" | OpenAI called with structured batch summary |
-| User edits an insight | `review_status` → `edited`, new value stored |
-| User accepts/rejects insight | `review_status` updated in DB |
+## Events Tracked
+- CSV uploaded (row count, column set)
+- Metric calculation completed
+- Insights generated (model, token count)
+- Report exported
+- Insight reviewed / edited
 
 ## Scoring Rules (rule-based first)
-- **Best campaign:** lowest CPA where conversions > 0
-- **Worst campaign:** highest CPA or lowest CTR with meaningful spend (> 10% of batch total)
-- **Efficiency score:** normalised composite of CPA rank + CTR rank + CVR rank (0–100)
+| Rule | Score boost |
+|---|---|
+| ROAS > 4× | +0.2 |
+| CTR > 3% | +0.15 |
+| CPC < channel average | +0.15 |
+| Conversions < 10 | −0.2 (flag as low volume) |
 
-Rule-based ranking runs even if OpenAI is unavailable. AI adds narrative explanation on top.
+OpenAI prompt returns a `confidence` float (0–1); stored verbatim.
+
+## What Gets Ranked
+Insights sorted by `confidence` descending before display. Best/worst performers ranked by ROAS.
 
 ## v1 vs Later
-| v1 | Later |
-|---|---|
-| Single-batch AI summary | Multi-period trend analysis |
-| Text insights in dashboard | Confidence badges + inline edit UI |
-| Rule-based campaign ranking | ML-scored anomaly detection |
+- **v1:** Rule-based metric scoring + OpenAI summary generation.
+- **Later:** Fine-tuned prompts per channel; anomaly detection via statistical z-score; period-over-period delta commentary.

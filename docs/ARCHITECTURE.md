@@ -3,25 +3,25 @@
 ## Stack
 | Layer | Choice |
 |---|---|
-| Frontend | Next.js 14 (App Router) + Tailwind CSS + Recharts |
-| API | Next.js API Routes (Node.js runtime) |
-| Database | Supabase PostgreSQL |
-| AI | OpenAI API (gpt-4o) — isolated in `/services/insights.ts` |
-| Deploy | Vercel (frontend + API) + Supabase (DB) |
+| Frontend | Next.js 14 (App Router), Tailwind CSS, Recharts |
+| API | Next.js Route Handlers (Edge-compatible) |
+| Database | Supabase (Postgres + RLS) |
+| AI | OpenAI API (`gpt-4o`) |
+| Deployment | Vercel (frontend + API), Supabase (DB) |
 
-## Key User Action — Step by Step
-1. User drops a CSV on the upload page.
-2. API route `/api/upload` parses, validates required columns, calculates CPC/CTR/CVR/CPA.
-3. Cleaned rows are written to `campaigns` table with an `upload_batch_id`.
-4. User sees a preview table, then the metrics dashboard.
-5. User clicks **Generate Insights** → `/api/generate-insights` queries the batch, calls OpenAI, stores each insight row in `report_insights` with `source`, `confidence`, `review_status`.
-6. Dashboard renders insight panel from DB — not from the raw API response.
-7. User opens the Report page, copies or exports.
+## Key User Action — Step-by-Step
+1. **Upload** — user picks a CSV; client validates required columns.
+2. **Parse** — `POST /api/upload` reads rows, computes CTR/CPC/CPL/ROAS, inserts into `campaigns`.
+3. **Store** — Supabase persists campaign rows; returns new IDs.
+4. **Show** — `GET /api/dashboard` aggregates rows; dashboard renders KPI cards + charts.
+5. **Generate** — `POST /api/generate-insights` sends campaign rows to OpenAI, receives structured JSON.
+6. **Rank** — insights sorted by confidence score before display.
+7. **Act** — user exports report; `GET /api/report/[id]` returns full markdown.
 
 ## Layer Plan
-1. **Data first** — schema, seed data, CRUD endpoints
-2. **App logic** — CSV parsing, metric calculation, dashboard (works with AI off)
-3. **Smart layer** — OpenAI summarisation on top of structured data
+1. **Data first** — schema + seed data; dashboard works with seed rows before any upload.
+2. **App logic** — upload, validation, metric calculation (pure JS, no AI dependency).
+3. **Smart features** — AI insight generation added on top; disabling OpenAI still leaves a fully functional metrics dashboard and export.
 
-## Why It Works Without AI
-All metrics (CPC, CTR, CVR, CPA) are calculated in pure TypeScript. The dashboard is fully functional. AI only enriches the insight text — removing OpenAI still leaves a working analytics tool.
+## Why Core Runs Without AI
+All metric calculations (CTR, CPC, CPL, ROAS) are deterministic JS. The dashboard, upload, and export routes have zero OpenAI calls. AI is an enhancement layer only.

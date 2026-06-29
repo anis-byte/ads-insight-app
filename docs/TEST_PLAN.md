@@ -1,28 +1,32 @@
 # Test Plan
 
-## v1 Success Scenario — Manual Steps
-1. Open app URL (no login). Confirm demo campaign cards are visible.
-2. Click **Upload CSV**. Upload a valid CSV with columns: `campaign_name`, `platform`, `spend`, `impressions`, `clicks`, `conversions`.
-3. Confirm preview table shows all parsed rows with correct values.
-4. Confirm dashboard shows calculated CPC, CTR, CVR, CPA for each campaign.
-5. Click **Generate Insights**. Confirm loading spinner appears.
-6. Confirm insight panel populates: best campaign, worst campaign, possible reason, recommendation.
-7. Open Report page. Confirm AI summary is rendered.
-8. Click **Copy** on an insight. Confirm clipboard receives the text.
-9. Click **Export**. Confirm file downloads or print dialog opens.
-10. Check Supabase `campaigns`, `reports`, `report_insights`, `audit_logs` — confirm rows were written.
+## v1 Success Scenario (manual walkthrough)
+1. Open the app at `/` — dashboard loads with seed campaign data and KPI cards. No login required.
+2. Click **Upload CSV** → upload `demo-data.csv` (5 campaigns).
+3. Confirm preview table shows 5 rows with correct column mapping.
+4. Click **Confirm Upload** → loading spinner → dashboard refreshes with new campaign rows added.
+5. Verify KPI cards update (Total Spend, Impressions, Clicks, avg ROAS reflect uploaded data).
+6. Click **Generate Insights** → loading state appears on button.
+7. Wait ≤ 30 seconds → button resolves → toast "Insights ready".
+8. Click **View Report** → `/report/[id]` renders: summary card, ≥ 2 findings, ≥ 1 recommendation, each with a confidence badge.
+9. Click **Export Report** → `.md` file downloads with campaign summary and all insights.
+10. Click **Copy** on one insight → clipboard contains insight text (browser confirms).
 
-## Empty State Tests
-- Upload a CSV with no data rows → show "No campaign rows found" error.
-- Click Generate Insights before uploading → show "Please upload a CSV first" message.
-- Open Report page with no report generated → show "No report yet" empty state.
+## Empty State Cases
+- Visit `/dashboard` with no campaigns: shows "No data yet — upload a CSV to get started" prompt with Upload button.
+- Visit `/report/nonexistent-id`: shows 404 message, not a blank page.
 
-## Error Case Tests
-- Upload a CSV missing the `spend` column → show specific column-name error.
-- Upload a file > 5 MB → show file size error before parsing.
-- Simulate OpenAI timeout (mock) → show "Insight generation failed, try again" toast; dashboard metrics still visible.
-- Upload a CSV with zero conversions for all campaigns → CPA shown as "N/A"; best/worst ranked by CTR fallback.
+## Error Cases
+| Scenario | Expected behaviour |
+|---|---|
+| CSV missing required `spend` column | Red validation banner listing missing columns; no rows inserted |
+| CSV > 5 MB | "File too large (max 5 MB)" error before upload attempt |
+| OpenAI API key missing / rate limited | Error toast; partial report saved with `value = 'Generation failed'` |
+| Upload same campaign names twice | Warning: "X rows already exist for this period" with option to overwrite or cancel |
+| Network drops mid-upload | Error toast "Upload failed — please retry"; no partial rows in DB |
 
-## Regression Checks (after Sprint 4)
-- Log in as User A, upload CSV. Log in as User B — confirm User B cannot see User A's campaigns.
-- Anonymous visitor sees demo rows but cannot see any authenticated user's data.
+## Regression Checks (after each sprint)
+- Seed rows still visible on dashboard after new upload.
+- Metric calculations: CTR = clicks ÷ impressions (verify with known values).
+- `review_status` defaults to `unreviewed` on all new AI insight rows.
+- No `OPENAI_API_KEY` or `SUPABASE_SERVICE_ROLE_KEY` appears in browser network tab responses.
