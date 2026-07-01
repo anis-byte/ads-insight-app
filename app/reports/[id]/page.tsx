@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CopyReportButton } from "./CopyReportButton";
+import { DeleteReportButton } from "./DeleteReportButton";
 import {
   formatCurrency,
   formatDateRange,
@@ -54,6 +55,9 @@ export default async function ReportPage({
                 >
                   Regenerate
                 </button>
+              </form>
+              <form action={`/api/reports/${report.id}/delete`} method="post">
+                <DeleteReportButton reportName={report.name} />
               </form>
             </div>
           </div>

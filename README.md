@@ -1,41 +1,38 @@
-# vibe-stack-supabase
+# Ads Insight App
 
-Next.js 15 + Supabase starter for shipping vibe-coded apps fast. Clone, provision, build.
+Upload a Meta or Google Ads CSV, parse campaign metrics, generate insight cards, and copy a ready-to-send client report.
+
+## Demo Flow
+
+1. Visit `/` and open the seeded Meta demo report.
+2. Open `/upload`.
+3. Upload `public/samples/demo_meta_ads.csv`.
+4. The app redirects to the generated report with campaign rows, insights, and report copy.
+5. Use **Copy Report** to copy the narrative or **Regenerate** to rebuild insights.
 
 ## Stack
 
 | Layer | Choice |
 |---|---|
-| Framework | Next.js 15 (App Router, React 19, Server Actions) |
-| Language | TypeScript strict |
-| Styles | Tailwind CSS v4 (CSS-first, no config file) |
-| Auth + DB | Supabase (`@supabase/ssr`) |
-| Package manager | Bun |
+| Framework | Next.js 15 App Router |
+| Database | Supabase Postgres |
+| Storage | Supabase Storage |
+| AI | OpenAI when `OPENAI_API_KEY` is configured, rule-based fallback otherwise |
 | Deploy | Vercel |
 
-## Quick start
+## Local Development
 
 ```bash
-bun install
-cp .env.example .env.local   # fill in your Supabase keys
-bun dev
+npm install
+vercel env pull .env.local --yes
+npm run dev
 ```
 
-Open http://localhost:3000. Edit `app/page.tsx` to start building.
+The Supabase schema lives in `supabase/migrations`. The app can run without login for the MVP demo because v1 RLS policies are intentionally permissive.
 
-## Provisioning a new project
+## Verification
 
-Use the `/new-vibe-project <name>` skill (see `claude-dotfiles` repo) which:
-1. Clones this template and renames it
-2. Creates a new GitHub repo and pushes
-3. Creates a Supabase project and injects URL + anon key
-4. Creates a Vercel project linked to the GitHub repo
-5. Triggers first deploy and returns the preview URL
-
-## Working with AI
-
-See [CLAUDE.md](CLAUDE.md) for conventions. This repo is pre-wired for gstack — start with `/office-hours`.
-
-## Switching to Neon
-
-If you need Postgres without Supabase (e.g. prefer Drizzle ORM + Clerk for auth), a `vibe-stack-neon` variant is planned. For now: fork this and swap `@supabase/ssr` for `drizzle-orm` + `@neondatabase/serverless`, add Clerk or NextAuth.
+```bash
+npm run typecheck
+npm run build
+```
