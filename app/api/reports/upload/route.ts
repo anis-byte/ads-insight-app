@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { parseAdsCsv, inferDateRange } from "@/lib/ads/csv";
+import { runReportAnalysis } from "@/lib/ads/intelligence";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
@@ -86,6 +87,8 @@ export async function POST(request: Request) {
     );
 
     if (metricsError) throw new Error(metricsError.message);
+
+    await runReportAnalysis(report.id);
 
     const { error: readyError } = await supabase
       .from("reports")
